@@ -130,14 +130,15 @@ ORDER BY
 
 -- Question 11:
 -- The product Raisin Bran is no longer being offered by the grocery store and being available for 3 years. Identify the SQL to implement. 
--- To Implement this we can give the product a STATUS attribute and set the Status to be Discontinued
+-- Add a 'Status' column to the 'Products' table with a default value of 'Active'
 ALTER TABLE Products ADD COLUMN Status VARCHAR(255) DEFAULT 'Active';
--- Now we can set the Status of Raisin Bran to be Discontinued
-SET SQL_SAFE_UPDATES = 0;
 
+SET SQL_SAFE_UPDATES = 0;
+-- Set the Status of 'Blueberry Yogurt' to be 'Discontinued'
 UPDATE Products
 SET Status = 'Discontinued'
-WHERE Name = 'Raisin Bran';
+WHERE Name = 'Blueberry Yogurt';
+-- Re-enable safe updates
 SET SQL_SAFE_UPDATES = 1;
 
 -- Question 12:
