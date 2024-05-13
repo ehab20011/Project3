@@ -11,6 +11,7 @@ CREATE TABLE Customers (
     Account VARCHAR(255),
     Password VARCHAR(255),
     CreditCardNumber VARCHAR(255),
+    Email VARCHAR(255),
     Phone VARCHAR(20)
 );
 CREATE TABLE Staff (
@@ -99,13 +100,14 @@ CREATE TABLE Order_Surveys (
 
 -- INSERT COMMANDS --
 -- Customers 
-INSERT IGNORE INTO Customers (Name, BillingAddress, Account, Password, Phone)
+INSERT IGNORE INTO Customers (Name, BillingAddress, Account, Password, Phone, Email)
 VALUES
-('Ehab Abdalla', '789 Jasmine Blvd, New York, NY', 'aria_noor', 'safe&sound123', '555-7890'),
-('Tariq Jamal', '354 Cedar Ave, Brooklyn, NY', 'tariq_jamal', 'secure*789', '555-6543'),
-('Fatma Muhammed', '912 Willow Lane, Queens, NY', 'luna_rodriguez', 'moonlight456', '555-2021'),
-('Helen Wang', '218 Bamboo Grove, Manhattan, NY', 'kai_hu', 'password1234', '555-8989'),
-('Leo Messi', '100 Liberty St, New York, NY', 'john_d', 'john1234', '555-1010');
+('Ehab Abdalla', '789 Jasmine Blvd, New York, NY', 'aria_noor', 'safe&sound123', '555-7890', 'ehab@email.com'),
+('Tariq Jamal', '354 Cedar Ave, Brooklyn, NY', 'tariq_jamal', 'secure*789', '555-6543', 'tariq@email.com'),
+('Fatma Muhammed', '912 Willow Lane, Queens, NY', 'luna_rodriguez', 'moonlight456', '555-2021', 'fatma@email.com'),
+('Helen Wang', '218 Bamboo Grove, Manhattan, NY', 'kai_hu', 'password1234', '555-8989', 'helen@email.com'),
+('Leo Messi', '100 Liberty St, New York, NY', 'john_d', 'john1234', '555-1010', 'leo@email.com');
+
 
 -- Staff
 INSERT IGNORE INTO Staff (Name, Address, Email)

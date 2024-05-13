@@ -1,47 +1,120 @@
 -- QUERIES --
 
 -- QUESTION 1: 
--- Identify customers who haven't completed a survey in the last 8 months
-SELECT c.Name AS CustomerName
-FROM Customers c
-WHERE NOT EXISTS (
-    SELECT 1 FROM Order_Surveys s
-    WHERE s.CustomerID = c.CustomerID
-    AND s.SurveyDate > DATE_SUB(CURDATE(), INTERVAL 8 MONTH)
-);
+-- Identify customers who have not completed a purchase/delivery survey in the last
+-- 8 months. Display the customer name and email. Use a nested select to answer this question.
+SELECT Name, Email
+FROM Customers
+WHERE CustomerID NOT IN (
+    SELECT DISTINCT p.CustomerID
+    FROM Purchases p
+    WHERE p.PurchaseID IN (
+        SELECT PurchaseID
+        FROM Deliveries
+        WHERE DeliveryDate >= DATE_SUB(CURDATE(), INTERVAL 8 MONTH)
+        UNION
+        SELECT PurchaseID
+        FROM Order_Surveys
+        WHERE SurveyDate >= DATE_SUB(CURDATE(), INTERVAL 8 MONTH)
+    )
+)
+LIMIT 0, 1000;
+
 
 -- QUESTION 2:
--- Identify the most popular product purchased in the last 3 months
-SELECT w.Location AS Warehouse, p.Name AS ProductName, p.Type AS ProductType, COUNT(*) AS NumberOfOrders
-FROM Purchases pu
-JOIN Products p ON pu.ProductID = p.ProductID
-JOIN Warehouse_Products wp ON p.ProductID = wp.ProductID
-JOIN Warehouses w ON wp.WarehouseID = w.WarehouseID
-WHERE pu.PurchaseDate > DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
-GROUP BY w.Location, p.Name, p.Type
-ORDER BY COUNT(*) DESC;
+-- Identify the most popular product purchased in the last month. Display four
+-- columns: warehouse, product name, product type and number of orders. Display
+-- one distinct row for each warehouse, product and product type. Display the product with the most orders first.
+SELECT 
+    wp.WarehouseID,
+    p.Name AS ProductName,
+    p.Type AS ProductType,
+    (
+        SELECT COUNT(DISTINCT PurchaseID)
+        FROM Purchases
+        WHERE ProductID = p.ProductID
+        AND PurchaseDate >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)
+    ) AS NumberOfOrders
+FROM 
+    Warehouse_Products wp,
+    Products p
+WHERE 
+    wp.ProductID = p.ProductID
+GROUP BY 
+    wp.WarehouseID, p.Name, p.Type, p.ProductID
+ORDER BY 
+    NumberOfOrders DESC
+LIMIT 1;
+
+
 
 -- QUESTION 3:
--- Identify customers with the most purchases of fruit in the last year by customer location
+-- Identify customers with the most purchases of fruit in the last year by customer location. Display five rows in your output – one row for each borough. Display
+-- three columns: borough, number of orders, total dollar amount of order. The borough with the most orders is displayed first. You may need multiple SQL to
+-- answer this question. 
+-- Step 1: Calculate the total number of orders and the total dollar amount of orders for each customer based on their location (borough) and whether they purchased fruit.
 SELECT 
-    SUBSTRING_INDEX(Customers.BillingAddress, ',', -1) AS Borough,
-    COUNT(Purchases.PurchaseID) AS NumberOfOrders,
-    SUM(Purchases.Price) AS TotalDollarAmountOfOrder
-FROM Customers
-JOIN Purchases ON Customers.CustomerID = Purchases.CustomerID
-JOIN Products ON Purchases.ProductID = Products.ProductID
-WHERE Products.Type = 'Fruit'
-AND Purchases.PurchaseDate > DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
-GROUP BY Borough
-ORDER BY NumberOfOrders DESC
+    c.BillingAddress AS Borough,
+    COUNT(DISTINCT p.PurchaseID) AS NumberOfOrders,
+    SUM(p.Price) AS TotalDollarAmount
+FROM 
+    Customers c,
+    Purchases p,
+    Products pr
+WHERE 
+    c.CustomerID = p.CustomerID
+    AND p.ProductID = pr.ProductID
+    AND pr.Type = 'Fruit'
+    AND p.PurchaseDate >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+GROUP BY 
+    c.BillingAddress
+ORDER BY 
+    NumberOfOrders DESC
+LIMIT 5;
+-- Step 2: Identify the borough with the most orders
+SET @maxOrders := (SELECT MAX(NumberOfOrders) FROM (SELECT 
+    COUNT(DISTINCT p.PurchaseID) AS NumberOfOrders
+FROM 
+    Customers c,
+    Purchases p,
+    Products pr
+WHERE 
+    c.CustomerID = p.CustomerID
+    AND p.ProductID = pr.ProductID
+    AND pr.Type = 'Fruit'
+    AND p.PurchaseDate >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+GROUP BY 
+    c.BillingAddress) AS maxOrders);
+-- Step 3: Filter the output to display only five rows, one for each borough
+SELECT 
+    c.BillingAddress AS Borough,
+    COUNT(DISTINCT p.PurchaseID) AS NumberOfOrders,
+    SUM(p.Price) AS TotalDollarAmount
+FROM 
+    Customers c,
+    Purchases p,
+    Products pr
+WHERE 
+    c.CustomerID = p.CustomerID
+    AND p.ProductID = pr.ProductID
+    AND pr.Type = 'Fruit'
+    AND p.PurchaseDate >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+GROUP BY 
+    c.BillingAddress
+HAVING 
+    NumberOfOrders = @maxOrders
+ORDER BY 
+    NumberOfOrders DESC
 LIMIT 5;
 
 -- QUESTION 4:
 -- Identify customers with no comments in the product survey. Display the customer name.
-SELECT DISTINCT c.Name AS CustomerName
-FROM Customers c
-LEFT JOIN Product_Ratings pr ON c.CustomerID = pr.CustomerID
-WHERE pr.RatingComment IS NULL OR TRIM(pr.RatingComment) = '' OR pr.RatingComment = 'No comment';
+SELECT Name AS CustomerName
+FROM Customers
+WHERE CustomerID NOT IN (
+    SELECT DISTINCT CustomerID
+    FROM Product_Ratings
+);
 
 -- QUESTION 5:
 -- Search the open-ended narrative text/comments in the product and delivery comments to identify personally identifiable information (PII). This includes any
@@ -52,13 +125,14 @@ SELECT
     pr.RatingDate AS DateOfComment,
     pr.RatingComment AS Comment
 FROM 
-    Customers c
-JOIN 
-    Product_Ratings pr ON c.CustomerID = pr.CustomerID
+    Customers c, Product_Ratings pr
 WHERE 
-    pr.RatingComment REGEXP '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}'
+    c.CustomerID = pr.CustomerID
+    AND pr.RatingComment REGEXP '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}'
 ORDER BY 
     c.Name;
+
+
     
 -- Question 7:
 -- Using purchases made in the last 2 months, identify customers with children. Display the customer name and email. Order the output by
@@ -69,28 +143,29 @@ SET SQL_SAFE_UPDATES = 0;
 UPDATE Products SET Attributes = 'Vegetarian' WHERE Name IN ('Spelt Noodles', 'Organic Avocado');
 SET SQL_SAFE_UPDATES = 1;
 -- Now Call the Query
-SELECT DISTINCT c.Name AS CustomerName
-FROM Customers c
-JOIN Purchases p ON c.CustomerID = p.CustomerID
-JOIN Products pr ON p.ProductID = pr.ProductID
-WHERE pr.Attributes = 'Vegetarian'
-AND p.PurchaseDate > DATE_SUB(CURDATE(), INTERVAL 2 MONTH)
-ORDER BY c.Name;
+SELECT DISTINCT c.Name AS CustomerName, c.Email
+FROM Customers c, Purchases p, Products pr
+WHERE 
+    c.CustomerID = p.CustomerID
+    AND p.ProductID = pr.ProductID
+    AND pr.Attributes = 'Vegetarian'
+    AND p.PurchaseDate > DATE_SUB(CURDATE(), INTERVAL 2 MONTH)
+ORDER BY 
+    c.Name;
 
 -- Question 8
 -- Identify staff with the most deliveries in the last 3 months. Display two columns: staff and number of deliveries. Display one row for each
 -- distinct staff. Display the staff with the most deliveries first.
 SELECT 
     s.Name AS StaffName,
-    COUNT(d.DeliveryID) AS NumberOfDeliveries
+    (
+        SELECT COUNT(*) 
+        FROM Deliveries 
+        WHERE StaffID = s.StaffID 
+        AND DeliveryDate > DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+    ) AS NumberOfDeliveries
 FROM 
     Staff s
-JOIN 
-    Deliveries d ON s.StaffID = d.StaffID
-WHERE 
-    d.DeliveryDate > DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
-GROUP BY 
-    s.StaffID, s.Name
 ORDER BY 
     NumberOfDeliveries DESC;
 
@@ -99,9 +174,12 @@ ORDER BY
 -- To Implement this we can give the product a STATUS attribute and set the Status to be Discontinued
 ALTER TABLE Products ADD COLUMN Status VARCHAR(255) DEFAULT 'Active';
 -- Now we can set the Status of Raisin Bran to be Discontinued
+SET SQL_SAFE_UPDATES = 0;
+
 UPDATE Products
 SET Status = 'Discontinued'
 WHERE Name = 'Raisin Bran';
+SET SQL_SAFE_UPDATES = 1;
 
 -- Question 12:
 -- Use the SQL DESCRIBE operation to display the structure for all tables.
