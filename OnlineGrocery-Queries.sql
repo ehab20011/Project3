@@ -20,7 +20,6 @@ WHERE CustomerID NOT IN (
 )
 LIMIT 0, 1000;
 
-
 -- QUESTION 2:
 -- Identify the most popular product purchased in the last month. Display four
 -- columns: warehouse, product name, product type and number of orders. Display
@@ -52,15 +51,12 @@ LIMIT 1;
 -- Identify customers with the most purchases of fruit in the last year by customer location. Display five rows in your output – one row for each borough. Display
 -- three columns: borough, number of orders, total dollar amount of order. The borough with the most orders is displayed first. You may need multiple SQL to
 -- answer this question. 
--- Step 1: Calculate the total number of orders and the total dollar amount of orders for each customer based on their location (borough) and whether they purchased fruit.
 SELECT 
     c.BillingAddress AS Borough,
     COUNT(DISTINCT p.PurchaseID) AS NumberOfOrders,
     SUM(p.Price) AS TotalDollarAmount
 FROM 
-    Customers c,
-    Purchases p,
-    Products pr
+    Customers c, Purchases p, Products pr
 WHERE 
     c.CustomerID = p.CustomerID
     AND p.ProductID = pr.ProductID
@@ -68,41 +64,6 @@ WHERE
     AND p.PurchaseDate >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
 GROUP BY 
     c.BillingAddress
-ORDER BY 
-    NumberOfOrders DESC
-LIMIT 5;
--- Step 2: Identify the borough with the most orders
-SET @maxOrders := (SELECT MAX(NumberOfOrders) FROM (SELECT 
-    COUNT(DISTINCT p.PurchaseID) AS NumberOfOrders
-FROM 
-    Customers c,
-    Purchases p,
-    Products pr
-WHERE 
-    c.CustomerID = p.CustomerID
-    AND p.ProductID = pr.ProductID
-    AND pr.Type = 'Fruit'
-    AND p.PurchaseDate >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
-GROUP BY 
-    c.BillingAddress) AS maxOrders);
--- Step 3: Filter the output to display only five rows, one for each borough
-SELECT 
-    c.BillingAddress AS Borough,
-    COUNT(DISTINCT p.PurchaseID) AS NumberOfOrders,
-    SUM(p.Price) AS TotalDollarAmount
-FROM 
-    Customers c,
-    Purchases p,
-    Products pr
-WHERE 
-    c.CustomerID = p.CustomerID
-    AND p.ProductID = pr.ProductID
-    AND pr.Type = 'Fruit'
-    AND p.PurchaseDate >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
-GROUP BY 
-    c.BillingAddress
-HAVING 
-    NumberOfOrders = @maxOrders
 ORDER BY 
     NumberOfOrders DESC
 LIMIT 5;
@@ -131,8 +92,6 @@ WHERE
     AND pr.RatingComment REGEXP '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}'
 ORDER BY 
     c.Name;
-
-
     
 -- Question 7:
 -- Using purchases made in the last 2 months, identify customers with children. Display the customer name and email. Order the output by
