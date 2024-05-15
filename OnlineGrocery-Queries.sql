@@ -89,26 +89,32 @@ FROM
     Customers c, Product_Ratings pr
 WHERE 
     c.CustomerID = pr.CustomerID
-    AND pr.RatingComment REGEXP '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}'
+    AND pr.RatingComment LIKE '%@gmail.com%'
 ORDER BY 
     c.Name;
     
 -- Question 7:
 -- Using purchases made in the last 2 months, identify customers with children. Display the customer name and email. Order the output by
 -- customer name. Replace children with other demographic characteristics. For instance, dog owners, seniors, vegetarians, Tesla car owners, etc.
+UPDATE Products SET Attributes = 'Vegetarian' WHERE ProductID IN (2, 4);
 
--- SET SQLSAFEUPDATES off so you can Mark some products as 'Vegetarian' then turn it back on
-SET SQL_SAFE_UPDATES = 0;
-UPDATE Products SET Attributes = 'Vegetarian' WHERE Name IN ('Spelt Noodles', 'Organic Avocado');
-SET SQL_SAFE_UPDATES = 1;
--- Now Call the Query
-SELECT DISTINCT c.Name AS CustomerName, c.Email
-FROM Customers c, Purchases p, Products pr
+SELECT DISTINCT 
+    c.Name AS CustomerName, 
+    c.Email
+FROM 
+    Customers c
 WHERE 
-    c.CustomerID = p.CustomerID
-    AND p.ProductID = pr.ProductID
-    AND pr.Attributes = 'Vegetarian'
-    AND p.PurchaseDate > DATE_SUB(CURDATE(), INTERVAL 2 MONTH)
+    c.CustomerID IN (
+        SELECT p.CustomerID 
+        FROM Purchases p 
+        WHERE 
+            p.ProductID IN (
+                SELECT pr.ProductID 
+                FROM Products pr 
+                WHERE pr.Attributes = 'Vegetarian'
+            )
+            AND p.PurchaseDate > DATE_SUB(CURDATE(), INTERVAL 2 MONTH)
+    )
 ORDER BY 
     c.Name;
 
@@ -129,17 +135,13 @@ ORDER BY
     NumberOfDeliveries DESC;
 
 -- Question 11:
--- The product Raisin Bran is no longer being offered by the grocery store and being available for 3 years. Identify the SQL to implement. 
--- Add a 'Status' column to the 'Products' table with a default value of 'Active'
+-- The product Blueberry Yogurt is no longer being offered by the grocery store and being available for 3 years. Identify the SQL to implement. 
+-- Add the Status Column
 ALTER TABLE Products ADD COLUMN Status VARCHAR(255) DEFAULT 'Active';
-
-SET SQL_SAFE_UPDATES = 0;
--- Set the Status of 'Blueberry Yogurt' to be 'Discontinued'
-UPDATE Products
-SET Status = 'Discontinued'
-WHERE Name = 'Blueberry Yogurt';
--- Re-enable safe updates
-SET SQL_SAFE_UPDATES = 1;
+-- Find the ProductID
+SELECT ProductID FROM Products WHERE Name = 'Blueberry Yogurt';
+-- Then use that ID to update
+UPDATE Products SET Status = 'Discontinued' WHERE ProductID = 3;
 
 -- Question 12:
 -- Use the SQL DESCRIBE operation to display the structure for all tables.

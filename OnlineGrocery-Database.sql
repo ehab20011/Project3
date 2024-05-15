@@ -2,7 +2,7 @@ USE OnlineGrocery;
 
 -- TABLE CREATIONS FOR THE DATABASE --
 -- Drop tables if they exist
-DROP TABLE IF EXISTS Order_Surveys, Product_Ratings, Deliveries, Purchases, Warehouse_Products, Products, Warehouses, Staff_Departments, Departments, Staff, Customers;
+DROP TABLE IF EXISTS Order_Surveys, Product_Ratings, Deliveries, Purchases, Warehouse_Products, Products, Warehouses, Staff_Departments, Departments, Staff, Customers, CreditCards;
 
 CREATE TABLE Customers (
     CustomerID INT AUTO_INCREMENT PRIMARY KEY,
@@ -97,6 +97,14 @@ CREATE TABLE Order_Surveys (
     FOREIGN KEY (PurchaseID) REFERENCES Purchases(PurchaseID),
     FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
 );
+CREATE TABLE CreditCards (
+    CreditCardID INT AUTO_INCREMENT PRIMARY KEY,
+    CustomerID INT,
+    CreditCardNumber VARCHAR(255),
+    ExpirationDate DATE,
+    CVV VARCHAR(10),
+    FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
+);
 
 -- INSERT COMMANDS --
 -- Customers 
@@ -171,10 +179,10 @@ VALUES
 INSERT IGNORE INTO Product_Ratings (CustomerID, ProductID, RatingMethod, RatingDate, RatingComment)
 VALUES
 (1, 5, 'Stars', CURDATE(), 'Loved it! For more info, email me at ehab@email.com'),
-(2, 6, 'Stars', CURDATE() - INTERVAL 5 DAY, 'Not bad, reach out at tariq@provider.net'),
-(3, 7, 'Number', CURDATE() - INTERVAL 10 DAY, 'Could be better... contact: fatma123@website.org'),
-(4, 4, 'Letter', CURDATE() - INTERVAL 15 DAY, 'Excellent product! My email is helen@sample.com for inquiries.'),
-(1, 1, 'Number', CURDATE() - INTERVAL 20 DAY, 'Pretty decent, email me for collaboration ehab.work@email.com');
+(2, 6, 'Stars', CURDATE() - INTERVAL 5 DAY, 'Not bad, reach out at tariq@gmail.com'),
+(3, 7, 'Number', CURDATE() - INTERVAL 10 DAY, 'Could be better... contact: fatma123@gmail.com'),
+(4, 4, 'Letter', CURDATE() - INTERVAL 15 DAY, 'Excellent product! My email is helen@gmail.com for inquiries.'),
+(1, 1, 'Number', CURDATE() - INTERVAL 20 DAY, 'Pretty decent, email me for collaboration ehab.work@gmail.com');
 
 -- Insert Deliveries
 INSERT IGNORE INTO Deliveries (PurchaseID, StaffID, DeliveryAddress, DeliveryDate)
@@ -185,6 +193,15 @@ VALUES
 (4, 4, '218 Bamboo Grove, Manhattan, NY', DATE_SUB(CURDATE(), INTERVAL 10 DAY)),
 (5, 1, '789 Jasmine Blvd, New York, NY', DATE_SUB(CURDATE(), INTERVAL 15 DAY)),
 (6, 2, '354 Cedar Ave, Brooklyn, NY', DATE_SUB(CURDATE(), INTERVAL 5 DAY));
+
+-- INSERT CreditCards
+INSERT IGNORE INTO CreditCards (CustomerID, CreditCardNumber, ExpirationDate, CVV)
+VALUES
+(1, '4111 1111 1111 1111', '2025-01-01', '123'),
+(2, '5500 0000 0000 0004', '2025-02-01', '234'),
+(3, '3400 0000 0000 009', '2025-03-01', '345'),
+(4, '3000 0000 0000 04', '2025-04-01', '456'),
+(5, '6011 0000 0000 0004', '2025-05-01', '567');
 
 
 
